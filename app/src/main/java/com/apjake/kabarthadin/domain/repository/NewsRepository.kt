@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface NewsRepository {
 
-    fun searchArticles(query: String, page: Int): Flow<Resource<List<Article>>>
-    fun loadMoreArticles(query: String, page: Int): Flow<Resource<List<Article>>>
+    fun searchArticles(query: String, page: Int): Flow<Resource<Boolean>>
+    fun loadMoreArticles(query: String, page: Int): Flow<Resource<Boolean>>
+    fun getArticles(): Flow<List<Article>>
 
 }

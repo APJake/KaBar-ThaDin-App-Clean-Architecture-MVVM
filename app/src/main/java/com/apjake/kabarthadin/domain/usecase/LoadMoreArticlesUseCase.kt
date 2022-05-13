@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 class LoadMoreArticlesUseCase(
     private val newsRepository: NewsRepository
 ) {
-    operator fun invoke(query: String, page: Int): Flow<Resource<List<Article>>> {
+    operator fun invoke(query: String, page: Int): Flow<Resource<Boolean>> {
         return newsRepository.loadMoreArticles(query, page)
     }
 }

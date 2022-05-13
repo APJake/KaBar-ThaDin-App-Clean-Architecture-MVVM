@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.apjake.kabarthadin.data.local.entity.ArticleEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NewsDao {
@@ -16,6 +17,6 @@ interface NewsDao {
     suspend fun clearArticles()
 
     @Query("SELECT * FROM ArticleEntity")
-    suspend fun getArticles(): List<ArticleEntity>
+    fun getArticles(): Flow<List<ArticleEntity>>
 
 }

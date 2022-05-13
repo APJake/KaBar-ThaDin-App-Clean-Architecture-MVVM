@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.flow
 class SearchArticlesUseCase(
     private val newsRepository: NewsRepository
 ) {
-    operator fun invoke(query: String): Flow<Resource<List<Article>>>{
+    operator fun invoke(query: String): Flow<Resource<Boolean>>{
         if(query.trim().isBlank()) return flow{}
         return newsRepository.searchArticles(query,1)
     }

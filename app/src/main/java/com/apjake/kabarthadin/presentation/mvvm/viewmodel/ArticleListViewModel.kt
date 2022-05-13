@@ -9,6 +9,7 @@ import com.apjake.kabarthadin.common.util.AppConstants.DEFAULT_ARTICLE_QUERY
 import com.apjake.kabarthadin.common.util.AppConstants.DELAY_TIME_FOR_NEXT_SEARCH
 import com.apjake.kabarthadin.common.util.Resource
 import com.apjake.kabarthadin.domain.model.Article
+import com.apjake.kabarthadin.domain.usecase.GetAllArticlesUseCase
 import com.apjake.kabarthadin.domain.usecase.LoadMoreArticlesUseCase
 import com.apjake.kabarthadin.domain.usecase.SearchArticlesUseCase
 import com.apjake.kabarthadin.presentation.mvvm.event.ArticleEvent
@@ -16,23 +17,16 @@ import com.apjake.kabarthadin.presentation.mvvm.state.ArticleListState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
     private val searchArticlesUseCase: SearchArticlesUseCase,
-    private val loadMoreArticlesUseCase: LoadMoreArticlesUseCase
+    private val loadMoreArticlesUseCase: LoadMoreArticlesUseCase,
+    private val getAllArticlesUseCase: GetAllArticlesUseCase
 ): ViewModel() {
-
-    private val _articles = MutableLiveData<List<Article>>()
-        .apply {
-            value = emptyList()
-        }
 
     private val _state = mutableStateOf(ArticleListState())
     val state: State<ArticleListState> = _state
@@ -45,6 +39,13 @@ class ArticleListViewModel @Inject constructor(
 
     init {
         search(DEFAULT_ARTICLE_QUERY)
+        viewModelScope.launch {
+            getAllArticlesUseCase().collectLatest { articles->
+                _state.value = _state.value.copy(
+                    articles = articles
+                )
+            }
+        }
     }
 
     private var searchJob: Job? = null
@@ -56,7 +57,6 @@ class ArticleListViewModel @Inject constructor(
     fun loadMore(){
         val query = _searchQuery.value
         val page = _state.value.page + 1
-        val currentArticlesSize = _state.value.articles.size
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
@@ -66,14 +66,12 @@ class ArticleListViewModel @Inject constructor(
                     when(result){
                         is Resource.Loading ->{
                             _state.value = state.value.copy(
-                                articles = result.data.orEmpty(),
                                 isLoading = false,
                                 isLoadingMore = true,
                             )
                         }
                         is Resource.Error ->{
                             _state.value = state.value.copy(
-                                articles = result.data.orEmpty(),
                                 isLoading = false,
                                 isLoadingMore = false
                             )
@@ -82,7 +80,7 @@ class ArticleListViewModel @Inject constructor(
                             ))
                         }
                         is Resource.Success->{
-                            if(result.data.orEmpty().size == currentArticlesSize){
+                            if(result.data == true){
                                 _state.value = state.value.copy(
                                     isLoading = false,
                                     isLoadingMore = false,
@@ -91,7 +89,6 @@ class ArticleListViewModel @Inject constructor(
                                 )
                             }else{
                                 _state.value = state.value.copy(
-                                    articles = result.data.orEmpty(),
                                     isLoading = false,
                                     isLoadingMore = false,
                                     page = page,
@@ -122,13 +119,11 @@ class ArticleListViewModel @Inject constructor(
                     when(result){
                         is Resource.Loading ->{
                             _state.value = state.value.copy(
-                                articles = result.data.orEmpty(),
                                 isLoading = true
                             )
                         }
                         is Resource.Error ->{
                             _state.value = state.value.copy(
-                                articles = result.data.orEmpty(),
                                 isLoading = false
                             )
                             _articlesEvent.emit(ArticleEvent.ShowSnackBar(
@@ -137,7 +132,6 @@ class ArticleListViewModel @Inject constructor(
                         }
                         is Resource.Success->{
                             _state.value = state.value.copy(
-                                articles = result.data.orEmpty(),
                                 isLoading = false
                             )
                         }

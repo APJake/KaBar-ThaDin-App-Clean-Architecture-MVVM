@@ -1,5 +1,6 @@
 package com.apjake.kabarthadin.data.repository
 
+import com.apjake.kabarthadin.common.util.AppConstants
 import com.apjake.kabarthadin.common.util.Resource
 import com.apjake.kabarthadin.data.datasource.NewsLocalDataSource
 import com.apjake.kabarthadin.data.datasource.NewsNetworkDataSource
@@ -14,37 +15,33 @@ class NewsRepositoryImpl(
     private val localDataSource: NewsLocalDataSource,
     private val networkDataSource: NewsNetworkDataSource,
 ): NewsRepository {
-    override fun searchArticles(query: String, page: Int): Flow<Resource<List<Article>>> = flow {
+    override fun searchArticles(query: String, page: Int): Flow<Resource<Boolean>> = flow {
         emit(Resource.Loading())
-        var oldArticles = emptyList<Article>()
         try {
-            oldArticles = localDataSource.getAllArticles()
-            val articles = networkDataSource.getNewsArticles(query, page)
+            val articles = networkDataSource.getNewsArticles(query, page, AppConstants.DEFAULT_ARTICLE_PAGE_SIZE)
             localDataSource.clearArticles()
             localDataSource.insertArticles(articles)
-            val localArticles = localDataSource.getAllArticles()
-            emit(Resource.Success(localArticles))
+            emit(Resource.Success(true))
         }catch (e: HttpException){
-            emit(Resource.Error("Something went wrong", oldArticles))
-        }catch (e: IOException){
-            emit(Resource.Error("No internet connections", oldArticles))
-        }
-    }
-
-    override fun loadMoreArticles(query: String, page: Int): Flow<Resource<List<Article>>> = flow{
-        emit(Resource.Loading())
-        var oldArticles = emptyList<Article>()
-        try {
-            oldArticles = localDataSource.getAllArticles()
-            emit(Resource.Loading(oldArticles))
-            val articles = networkDataSource.getNewsArticles(query, page)
-            localDataSource.insertArticles(articles)
-            val newArticles = localDataSource.getAllArticles()
-            emit(Resource.Success(newArticles))
-        }catch (e: HttpException){
-            emit(Resource.Success(oldArticles))
+            emit(Resource.Error("Something went wrong"))
         }catch (e: IOException){
             emit(Resource.Error("No internet connections"))
         }
     }
+
+    override fun loadMoreArticles(query: String, page: Int): Flow<Resource<Boolean>> = flow{
+        emit(Resource.Loading())
+        try {
+            emit(Resource.Loading())
+            val articles = networkDataSource.getNewsArticles(query, page, AppConstants.DEFAULT_ARTICLE_PAGE_SIZE)
+            localDataSource.insertArticles(articles)
+            emit(Resource.Success(true))
+        }catch (e: HttpException){
+            emit(Resource.Success(false))
+        }catch (e: IOException){
+            emit(Resource.Error("No internet connections"))
+        }
+    }
+
+    override fun getArticles(): Flow<List<Article>> = localDataSource.getAllArticles()
 }

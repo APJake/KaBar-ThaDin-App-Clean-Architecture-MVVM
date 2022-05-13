@@ -1,5 +1,6 @@
 package com.apjake.kabarthadin.presentation.screen
 
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,41 +36,32 @@ fun ArticleListScreen(
 
     LaunchedEffect(key1 = true){
         viewModel.articlesEvent.collectLatest { event ->
+            Log.i("Home", "$event")
             when(event){
                 is ArticleEvent.ShowSnackBar ->{
-                    scaffoldState.snackbarHostState.showSnackbar(
-                        message = event.message
+                    val snackBarResult = scaffoldState.snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "Refresh"
                     )
+                    when(snackBarResult){
+                        SnackbarResult.Dismissed -> Unit
+                        SnackbarResult.ActionPerformed ->{
+                            viewModel.reload()
+                        }
+                    }
                 }
             }
         }
     }
-
-    Box(
-        modifier = Modifier
-            .background(MaterialTheme.colors.background)
-    ){
-        Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-            ) {
-                OutlinedTextField(
-                    value = viewModel.searchQuery.value,
-                    onValueChange = viewModel::search,
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(MaterialTheme.colors.background),
-                    shape = RoundedCornerShape(30.dp),
-                    placeholder = {
-                        Text(text = "Bitcoin")
-                    },
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        scaffoldState = scaffoldState
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .background(MaterialTheme.colors.background)
+                .padding(paddingValues)
+        ){
             SwipeRefresh(
                 state = rememberSwipeRefreshState(isRefreshing = state.isLoading),
                 onRefresh = { viewModel.reload() },
@@ -77,9 +70,29 @@ fun ArticleListScreen(
                 val articles = state.articles
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
+                        .fillMaxSize()
                 ){
+                    item {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = viewModel.searchQuery.value,
+                                onValueChange = viewModel::search,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(MaterialTheme.colors.background),
+                                shape = RoundedCornerShape(30.dp),
+                                placeholder = {
+                                    Text(text = "Bitcoin")
+                                },
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     items(articles.size){ i->
                         if (i >= state.articles.size - 2 && !state.endReached && !state.isLoading && !state.isLoadingMore) {
                             viewModel.loadMore()
@@ -106,7 +119,7 @@ fun ArticleListScreen(
                     }
                 }
             }
-
         }
     }
+
 }

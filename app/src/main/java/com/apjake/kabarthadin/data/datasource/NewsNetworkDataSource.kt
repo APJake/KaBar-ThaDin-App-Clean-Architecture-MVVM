@@ -6,6 +6,9 @@ import com.apjake.kabarthadin.domain.model.Article
 import kotlinx.coroutines.flow.Flow
 
 interface NewsNetworkDataSource {
-    suspend fun getNewsArticles(query: String, page: Int, pageSize: Int = AppConstants.DEFAULT_ARTICLE_PAGE_SIZE)
-            : List<Article>
+    suspend fun getNewsArticles(
+        query: String,
+        page: Int,
+        pageSize: Int
+    ): List<Article>
 }

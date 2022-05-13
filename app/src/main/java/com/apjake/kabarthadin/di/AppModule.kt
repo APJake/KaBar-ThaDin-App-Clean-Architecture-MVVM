@@ -10,6 +10,7 @@ import com.apjake.kabarthadin.data.network.datasource.NewsNetworkDataSourceImpl
 import com.apjake.kabarthadin.data.network.service.NewsApi
 import com.apjake.kabarthadin.data.repository.NewsRepositoryImpl
 import com.apjake.kabarthadin.domain.repository.NewsRepository
+import com.apjake.kabarthadin.domain.usecase.GetAllArticlesUseCase
 import com.apjake.kabarthadin.domain.usecase.LoadMoreArticlesUseCase
 import com.apjake.kabarthadin.domain.usecase.SearchArticlesUseCase
 import dagger.Module
@@ -23,6 +24,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 class AppModule {
+
+    @Provides
+    @Singleton
+    fun provideGetAllArticlesUseCase(
+        newsRepository: NewsRepository
+    ) = GetAllArticlesUseCase(newsRepository)
 
     @Provides
     @Singleton
